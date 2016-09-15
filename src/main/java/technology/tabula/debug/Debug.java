@@ -23,6 +23,7 @@ import technology.tabula.Page;
 import technology.tabula.ProjectionProfile;
 import technology.tabula.Rectangle;
 import technology.tabula.Ruling;
+import technology.tabula.StraightEdgeDetector;
 import technology.tabula.Table;
 import technology.tabula.TextChunk;
 import technology.tabula.TextElement;
@@ -66,6 +67,17 @@ public class Debug {
         List<Ruling> rulings = new ArrayList<Ruling>(page.getHorizontalRulings());
         rulings.addAll(page.getVerticalRulings());
         drawShapes(g, rulings);
+    }
+
+    private static void debugStraightEdges (Graphics2D g, Page page) {
+        List<Float> bestEdges = StraightEdgeDetector.getBestPageEdges(page);
+
+        int i = 0;
+        for (Float p: bestEdges) {
+            Ruling r = new Ruling(new Point2D.Float(p.floatValue(), (float) page.getTop()), new Point2D.Float(p.floatValue(), (float) page.getBottom()));
+            g.setColor(COLORS[(i++) % 5]);
+            drawShape(g, r);
+        }
     }
 
     private static void debugColumnRegions(Graphics2D g, Page page) {
@@ -221,8 +233,8 @@ public class Debug {
 
     public static void renderPage(String pdfPath, String outPath, int pageNumber, Rectangle area,
             boolean drawTextChunks, boolean drawSpreadsheets, boolean drawRulings, boolean drawIntersections,
-            boolean drawColumnRegions, boolean drawColumns, boolean drawCharacters, boolean drawArea,
-            boolean drawCells, boolean drawUnprocessedRulings, boolean drawProjectionProfile,
+            boolean drawStraightEdges, boolean drawColumnRegions, boolean drawColumns, boolean drawCharacters,
+            boolean drawArea, boolean drawCells, boolean drawUnprocessedRulings, boolean drawProjectionProfile,
             boolean drawClippingPaths, boolean drawDetectedTables) throws IOException {
         PDDocument document = PDDocument.load(pdfPath);
 
@@ -254,6 +266,9 @@ public class Debug {
         }
         if (drawIntersections) {
             debugIntersections(g, page);
+        }
+        if (drawStraightEdges) {
+            debugStraightEdges(g, page);
         }
         if (drawColumnRegions) {
             debugColumnRegions(g, page);
@@ -298,6 +313,7 @@ public class Debug {
         o.addOption("i", "intersections", false, "Show intersections between rulings.");
         o.addOption("s", "spreadsheets", false, "Show detected spreadsheets.");
         o.addOption("t", "textchunks", false, "Show detected text chunks (merged characters)");
+        o.addOption("v", "straightedges", false, "Show vertical edges as detected by StraightEdgeDetector");
         o.addOption("c", "columns", false, "Show columns as detected by BasicExtractionAlgorithm");
         o.addOption("C", "columnregions", false, "Show column regions as detected by BasicExtractionAlgorithm");
         o.addOption("e", "characters", false, "Show detected characters");
@@ -385,6 +401,7 @@ public class Debug {
                            line.hasOption('s'),
                            line.hasOption('r'),
                            line.hasOption('i'),
+                           line.hasOption('v'),
                            line.hasOption('C'),
                            line.hasOption('c'),
                            line.hasOption('e'),
