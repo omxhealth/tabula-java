@@ -183,6 +183,7 @@ public class CommandLineApp {
         ObjectExtractor extractor = (this.password == null) ?
                 new ObjectExtractor(pdfDocument) :
                 new ObjectExtractor(pdfDocument, this.password);
+
         PageIterator pageIterator = (pages == null) ?
           extractor.extract() :
           extractor.extract(pages);
@@ -273,7 +274,6 @@ public class CommandLineApp {
         o.addOption("v", "version", false, "Print version and exit.");
         o.addOption("h", "help", false, "Print this help text.");
         o.addOption("g", "guess", false, "Guess the portion of the page to analyze per page.");
-        o.addOption("d", "debug", false, "Print detected table areas instead of processing");
         o.addOption("r", "spreadsheet", false, "Force PDF to be extracted using spreadsheet-style extraction (if there are ruling lines separating each cell, as in a PDF of an Excel spreadsheet)");
         o.addOption("n", "no-spreadsheet", false, "Force PDF not to be extracted using spreadsheet-style extraction (if there are ruling lines separating each cell, as in a PDF of an Excel spreadsheet)");
         o.addOption("i", "silent", false, "Suppress all stderr output.");
@@ -321,8 +321,6 @@ public class CommandLineApp {
     private static class TableExtractor {
       private boolean guess = false;
       private boolean useLineReturns = false;
-      private BasicExtractionAlgorithm basicExtractor = new BasicExtractionAlgorithm();
-      private SpreadsheetExtractionAlgorithm spreadsheetExtractor = new SpreadsheetExtractionAlgorithm();
       private List<Float> verticalRulingPositions = null;
       private ExtractionMethod method = ExtractionMethod.BASIC;
 
@@ -348,7 +346,7 @@ public class CommandLineApp {
       public List<Table> extractTables(Page page) {
           ExtractionMethod effectiveMethod = this.method;
           if (effectiveMethod == ExtractionMethod.DECIDE) {
-            effectiveMethod = spreadsheetExtractor.isTabular(page) ?
+            effectiveMethod = SpreadsheetExtractionAlgorithm.isPageTabular(page) ?
               ExtractionMethod.SPREADSHEET :
               ExtractionMethod.BASIC;
           }
@@ -363,6 +361,7 @@ public class CommandLineApp {
       }
 
       public List<Table> extractTablesBasic(Page page) {
+        BasicExtractionAlgorithm basicExtractor = new BasicExtractionAlgorithm();
         if (guess) {
           // guess the page areas to extract using a detection algorithm
           // currently we only have a detector that uses spreadsheets to find table areas
@@ -385,6 +384,7 @@ public class CommandLineApp {
 
       public List<Table> extractTablesSpreadsheet(Page page) {
           // TODO add useLineReturns
+          SpreadsheetExtractionAlgorithm spreadsheetExtractor = new SpreadsheetExtractionAlgorithm();
           return (List<Table>)spreadsheetExtractor.extract(page);
       }
     }
