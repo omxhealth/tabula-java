@@ -24,6 +24,7 @@ import technology.tabula.detectors.NurminenDetectionAlgorithm;
 import technology.tabula.detectors.SpreadsheetDetectionAlgorithm;
 import technology.tabula.extractors.BasicExtractionAlgorithm;
 import technology.tabula.extractors.SpreadsheetExtractionAlgorithm;
+import technology.tabula.filters.PageNumberFilter;
 import technology.tabula.writers.CSVWriter;
 import technology.tabula.writers.JSONWriter;
 import technology.tabula.writers.TSVWriter;
@@ -246,6 +247,7 @@ public class CommandLineApp {
       extractor.setMethod(CommandLineApp.whichExtractionMethod(line));
       extractor.setUseLineReturns(line.hasOption('u'));
       extractor.setUseStraightEdges(line.hasOption("detect-horizontal-alignment"));
+      extractor.setRemovePageNumbers(line.hasOption("rm-page-numbers"));
 
       if (line.hasOption('c')) {
           extractor.setVerticalRulingPositions(parseFloatList(line.getOptionValue('c')));
@@ -283,6 +285,7 @@ public class CommandLineApp {
         o.addOption("r", "spreadsheet", false, "Force PDF to be extracted using spreadsheet-style extraction (if there are ruling lines separating each cell, as in a PDF of an Excel spreadsheet)");
         o.addOption("n", "no-spreadsheet", false, "Force PDF not to be extracted using spreadsheet-style extraction (if there are ruling lines separating each cell, as in a PDF of an Excel spreadsheet)");
         o.addOption("i", "silent", false, "Suppress all stderr output.");
+        o.addOption("pn", "rm-page-numbers", false, "Attempt to remove page numbers");
         o.addOption("u", "use-line-returns", false, "Use embedded line returns in cells. (Only in spreadsheet mode.)");
         o.addOption("ha", "detect-horizontal-alignment", false, "Detect horizontal alignment of text to improve column detection.");
         o.addOption("d", "debug", false, "Print detected table areas instead of processing.");
@@ -329,6 +332,8 @@ public class CommandLineApp {
       private boolean guess = false;
       private boolean useLineReturns = false;
       private boolean useStraightEdges = false;
+      private boolean removePagenumbers = false;
+
       private List<Float> verticalRulingPositions = null;
       private ExtractionMethod method = ExtractionMethod.BASIC;
 
@@ -349,6 +354,10 @@ public class CommandLineApp {
 
       public void setUseStraightEdges(boolean useStraightEdges) {
         this.useStraightEdges = useStraightEdges;
+      }
+
+      public void setRemovePageNumbers(boolean removePagenumbers) {
+        this.removePagenumbers = removePagenumbers;
       }
 
       public void setMethod(ExtractionMethod method) {
@@ -374,6 +383,10 @@ public class CommandLineApp {
 
       public List<Table> extractTablesBasic(Page page) {
         BasicExtractionAlgorithm basicExtractor = new BasicExtractionAlgorithm();
+        if (removePagenumbers) {
+            basicExtractor.setLineFilter(new PageNumberFilter());
+        }
+
         if (guess) {
           // guess the page areas to extract using a detection algorithm
           // currently we only have a detector that uses spreadsheets to find table areas

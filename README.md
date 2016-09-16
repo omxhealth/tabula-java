@@ -48,6 +48,7 @@ Tabula helps you extract tables from PDFs
  -p,--pages <PAGES>         Comma separated list of ranges, or all.
                             Examples: --pages 1-3,5-7, --pages 3 or
                             --pages all. Default is --pages 1
+ -pn,--rm-page-numbers      Attempt to remove page numbers
  -r,--spreadsheet           Force PDF to be extracted using
                             spreadsheet-style extraction (if there are
                             ruling lines separating each cell, as in a PDF

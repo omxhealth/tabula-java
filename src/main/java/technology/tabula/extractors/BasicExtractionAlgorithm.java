@@ -13,6 +13,8 @@ import technology.tabula.Ruling;
 import technology.tabula.Table;
 import technology.tabula.TextChunk;
 import technology.tabula.TextElement;
+import technology.tabula.filters.LineFilter;
+
 
 public class BasicExtractionAlgorithm implements ExtractionAlgorithm {
 
@@ -23,11 +25,17 @@ public class BasicExtractionAlgorithm implements ExtractionAlgorithm {
     // column positions
     private List<Float> columnHintPositions = null;
 
+    private LineFilter lineFilter = null;
+
     public BasicExtractionAlgorithm() {
     }
 
     public BasicExtractionAlgorithm(List<Ruling> verticalRulings) {
         this.verticalRulings = verticalRulings;
+    }
+
+    public void setLineFilter(LineFilter filter) {
+      this.lineFilter = filter;
     }
 
     public List<Table> extract(Page page, List<Float> verticalRulingPositions) {
@@ -49,6 +57,10 @@ public class BasicExtractionAlgorithm implements ExtractionAlgorithm {
         }
 
         List<Line> lines = TextChunk.groupByLines(extractTextChunks(page));
+        if (lineFilter != null) {
+          lines = lineFilter.filterLines(lines);
+        }
+
         List<Float> columns = null;
 
         if (this.verticalRulings != null) {
@@ -116,7 +128,6 @@ public class BasicExtractionAlgorithm implements ExtractionAlgorithm {
       }
     }
 
-
     public static List<Rectangle> columnRegions(List<Line> lines) {
         List<Rectangle> regions = new ArrayList<Rectangle>();
         for (TextChunk tc: lines.get(0).getTextElements()) {
@@ -176,5 +187,4 @@ public class BasicExtractionAlgorithm implements ExtractionAlgorithm {
 
         return rv;
     }
-
 }
