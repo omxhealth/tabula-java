@@ -188,6 +188,7 @@ public class CommandLineApp {
         ObjectExtractor extractor = (this.password == null) ?
                 new ObjectExtractor(pdfDocument) :
                 new ObjectExtractor(pdfDocument, this.password);
+
         PageIterator pageIterator = (pages == null) ?
           extractor.extract() :
           extractor.extract(pages);
@@ -244,6 +245,7 @@ public class CommandLineApp {
       extractor.setGuess(line.hasOption('g'));
       extractor.setMethod(CommandLineApp.whichExtractionMethod(line));
       extractor.setUseLineReturns(line.hasOption('u'));
+      extractor.setUseStraightEdges(line.hasOption("detect-horizontal-alignment"));
 
       if (line.hasOption('c')) {
           extractor.setVerticalRulingPositions(parseFloatList(line.getOptionValue('c')));
@@ -278,11 +280,11 @@ public class CommandLineApp {
         o.addOption("v", "version", false, "Print version and exit.");
         o.addOption("h", "help", false, "Print this help text.");
         o.addOption("g", "guess", false, "Guess the portion of the page to analyze per page.");
-        o.addOption("d", "debug", false, "Print detected table areas instead of processing");
         o.addOption("r", "spreadsheet", false, "Force PDF to be extracted using spreadsheet-style extraction (if there are ruling lines separating each cell, as in a PDF of an Excel spreadsheet)");
         o.addOption("n", "no-spreadsheet", false, "Force PDF not to be extracted using spreadsheet-style extraction (if there are ruling lines separating each cell, as in a PDF of an Excel spreadsheet)");
         o.addOption("i", "silent", false, "Suppress all stderr output.");
         o.addOption("u", "use-line-returns", false, "Use embedded line returns in cells. (Only in spreadsheet mode.)");
+        o.addOption("ha", "detect-horizontal-alignment", false, "Detect horizontal alignment of text to improve column detection.");
         o.addOption("d", "debug", false, "Print detected table areas instead of processing.");
         o.addOption(OptionBuilder.withLongOpt("batch")
             .withDescription("Convert all .pdfs in the provided directory.")
@@ -326,8 +328,7 @@ public class CommandLineApp {
     private static class TableExtractor {
       private boolean guess = false;
       private boolean useLineReturns = false;
-      private BasicExtractionAlgorithm basicExtractor = new BasicExtractionAlgorithm();
-      private SpreadsheetExtractionAlgorithm spreadsheetExtractor = new SpreadsheetExtractionAlgorithm();
+      private boolean useStraightEdges = false;
       private List<Float> verticalRulingPositions = null;
       private ExtractionMethod method = ExtractionMethod.BASIC;
 
@@ -346,6 +347,10 @@ public class CommandLineApp {
         this.useLineReturns = useLineReturns;
       }
 
+      public void setUseStraightEdges(boolean useStraightEdges) {
+        this.useStraightEdges = useStraightEdges;
+      }
+
       public void setMethod(ExtractionMethod method) {
         this.method = method;
       }
@@ -353,7 +358,7 @@ public class CommandLineApp {
       public List<Table> extractTables(Page page) {
           ExtractionMethod effectiveMethod = this.method;
           if (effectiveMethod == ExtractionMethod.DECIDE) {
-            effectiveMethod = spreadsheetExtractor.isTabular(page) ?
+            effectiveMethod = SpreadsheetExtractionAlgorithm.isPageTabular(page) ?
               ExtractionMethod.SPREADSHEET :
               ExtractionMethod.BASIC;
           }
@@ -368,6 +373,7 @@ public class CommandLineApp {
       }
 
       public List<Table> extractTablesBasic(Page page) {
+        BasicExtractionAlgorithm basicExtractor = new BasicExtractionAlgorithm();
         if (guess) {
           // guess the page areas to extract using a detection algorithm
           // currently we only have a detector that uses spreadsheets to find table areas
@@ -382,6 +388,10 @@ public class CommandLineApp {
           return tables;
         }
 
+        if (useStraightEdges) {
+          basicExtractor.setTextColumnHints(StraightEdgeDetector.getBestPageEdges(page));
+        }
+
         if (verticalRulingPositions != null) {
           return basicExtractor.extract(page, verticalRulingPositions);
         }
@@ -390,6 +400,7 @@ public class CommandLineApp {
 
       public List<Table> extractTablesSpreadsheet(Page page) {
           // TODO add useLineReturns
+          SpreadsheetExtractionAlgorithm spreadsheetExtractor = new SpreadsheetExtractionAlgorithm();
           return (List<Table>)spreadsheetExtractor.extract(page);
       }
     }

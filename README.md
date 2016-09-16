@@ -36,6 +36,8 @@ Tabula helps you extract tables from PDFs
  -g,--guess                 Guess the portion of the page to analyze per
                             page.
  -h,--help                  Print this help text.
+ -ha,--detect-horizontal-alignment   Detect horizontal alignment of text to
+                                    improve column detection.
  -i,--silent                Suppress all stderr output.
  -n,--no-spreadsheet        Force PDF not to be extracted using
                             spreadsheet-style extraction (if there are
