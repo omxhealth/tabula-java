@@ -20,6 +20,7 @@ public class StraightEdgeDetector {
     // but
     private HashMap<Float, Integer> edgeCounts = new HashMap<Float, Integer>();
     private int maxEdgeCount = 0;
+    private static final float DEFAULT_NUDGE = 0.1f;
 
     public int distinctEdges() {
       return edgeCounts.size();
@@ -32,27 +33,38 @@ public class StraightEdgeDetector {
       maxEdgeCount = Math.max(maxEdgeCount, newValue);
     }
 
-    public List<Float> significantEdgePositions() {
+    /**
+     * Finds all edges, filters them based on a signficance heuristic, and sorts them.
+     * @param nudge Value to add to each edge result, to avoid overlapping the text
+     * @return [Collection of floats, sorted indicating the positions of aligned edges in the page]
+     */
+    public List<Float> significantEdgePositions(float nudge) {
       ArrayList<Float> significantEdges = new ArrayList<Float>();
       for (Float edge: edgeCounts.keySet()) {
         if (edgeCounts.get(edge).intValue() * 2 < maxEdgeCount) continue;
         // simple heuristic to discard unimportant edges. The idea is that for significant
         // edges, basically every row should have something starting at that column
-        significantEdges.add(edge);
+        significantEdges.add(new Float(edge.floatValue() + nudge));
       }
       Collections.sort(significantEdges);
       return significantEdges;
     }
 
     public static List<Float> getBestPageEdges(Page page) {
+      return getBestPageEdges(page, DEFAULT_NUDGE);
+    }
+
+    public static List<Float> getBestPageEdges(Page page, float nudge) {
       List<TextChunk> chunks = TextElement.mergeWords(page.getText());
       StraightEdgeDetector leftEdges = detectLeftTextEdges(chunks);
       StraightEdgeDetector rightEdges = detectRightTextEdges(chunks);
 
       // return the detector with the least edges. ragged edges should produce
       // many more edges, so this should select the side with straight edges
-      if (leftEdges.distinctEdges() < rightEdges.distinctEdges()) return leftEdges.significantEdgePositions();
-      return rightEdges.significantEdgePositions();
+      if (leftEdges.distinctEdges() < rightEdges.distinctEdges()) {
+        return leftEdges.significantEdgePositions(-nudge);
+      }
+      return rightEdges.significantEdgePositions(nudge);
     }
 
     public static StraightEdgeDetector detectLeftTextEdges(List<TextChunk> chunks) {

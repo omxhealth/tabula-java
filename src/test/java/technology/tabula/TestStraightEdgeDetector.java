@@ -17,11 +17,11 @@ public class TestStraightEdgeDetector {
     @Test
     public void testLeftAlignedText() throws IOException {
       Page page = UtilsForTesting.getPage("src/test/resources/technology/tabula/straight-edges.pdf", 1);
-      List<Float> bestEdges = StraightEdgeDetector.getBestPageEdges(page);
+      List<Float> bestEdges = StraightEdgeDetector.getBestPageEdges(page, 0);
       assertEquals(bestEdges.size(), 3);
 
-      assertEquals(bestEdges.get(0).floatValue(), 57f, 1f);
-      assertEquals(bestEdges.get(1).floatValue(), 269f, 1f);
-      assertEquals(bestEdges.get(2).floatValue(), 392f, 1f);
+      assertEquals(57f, bestEdges.get(0).floatValue(), 1f);
+      assertEquals(269f, bestEdges.get(1).floatValue(), 1f);
+      assertEquals(392f, bestEdges.get(2).floatValue(), 1f);
     }
 }
