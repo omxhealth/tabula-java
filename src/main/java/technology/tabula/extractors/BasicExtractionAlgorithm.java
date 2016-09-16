@@ -13,18 +13,26 @@ import technology.tabula.Ruling;
 import technology.tabula.Table;
 import technology.tabula.TextChunk;
 import technology.tabula.TextElement;
+import technology.tabula.filters.LineFilter;
+
 
 public class BasicExtractionAlgorithm implements ExtractionAlgorithm {
-    
+
     private List<Ruling> verticalRulings = null;
-    
+
+    private LineFilter lineFilter = null;
+
     public BasicExtractionAlgorithm() {
     }
-    
+
     public BasicExtractionAlgorithm(List<Ruling> verticalRulings) {
         this.verticalRulings = verticalRulings;
     }
-    
+
+    public void setLineFilter(LineFilter filter) {
+      this.lineFilter = filter;
+    }
+
     public List<Table> extract(Page page, List<Float> verticalRulingPositions) {
         List<Ruling> verticalRulings = new ArrayList<Ruling>(verticalRulingPositions.size());
         for (Float p: verticalRulingPositions) {
@@ -36,17 +44,21 @@ public class BasicExtractionAlgorithm implements ExtractionAlgorithm {
 
     @Override
     public List<Table> extract(Page page) {
-        
+
         List<TextElement> textElements = page.getText();
-        
+
         if (textElements.size() == 0) {
             return Arrays.asList(new Table[] { Table.EMPTY });
         }
-        
+
         List<TextChunk> textChunks = this.verticalRulings == null ? TextElement.mergeWords(page.getText()) : TextElement.mergeWords(page.getText(), this.verticalRulings);
         List<Line> lines = TextChunk.groupByLines(textChunks);
+        if (lineFilter != null) {
+          lines = lineFilter.filterLines(lines);
+        }
+
         List<Float> columns = null;
-        
+
         if (this.verticalRulings != null) {
             Collections.sort(this.verticalRulings, new Comparator<Ruling>() {
                 @Override
@@ -62,13 +74,13 @@ public class BasicExtractionAlgorithm implements ExtractionAlgorithm {
         else {
             columns = columnPositions(lines);
         }
-        
+
         Table table = new Table(page, this);
-        
+
         for (int i = 0; i < lines.size(); i++) {
             Line line = lines.get(i);
             List<TextChunk> elements = line.getTextElements();
-            
+
             Collections.sort(elements, new Comparator<TextChunk>() {
 
 				@Override
@@ -76,7 +88,7 @@ public class BasicExtractionAlgorithm implements ExtractionAlgorithm {
 					return new java.lang.Float(o1.getLeft()).compareTo(o2.getLeft());
 				}
 			});
-            
+
             for (TextChunk tc: elements) {
                 if (tc.isSameChar(Line.WHITE_SPACE_CHARS)) {
                     continue;
@@ -86,23 +98,23 @@ public class BasicExtractionAlgorithm implements ExtractionAlgorithm {
                 boolean found = false;
                 for(; j < columns.size(); j++) {
                     if (tc.getLeft() <= columns.get(j)) {
-                        found = true; 
+                        found = true;
                         break;
-                    } 
+                    }
                 }
                 table.add(tc, i, found ? j : columns.size());
             }
         }
-        
+
         return Arrays.asList(new Table[] { table } );
     }
-    
+
     @Override
     public String toString() {
         return "basic";
     }
-    
-    
+
+
     /**
      * @param lines must be an array of lines sorted by their +top+ attribute
      * @return a list of column boundaries (x axis)
@@ -111,22 +123,22 @@ public class BasicExtractionAlgorithm implements ExtractionAlgorithm {
 
         List<Rectangle> regions = new ArrayList<Rectangle>();
         for (TextChunk tc: lines.get(0).getTextElements()) {
-            if (tc.isSameChar(Line.WHITE_SPACE_CHARS)) { 
-                continue; 
+            if (tc.isSameChar(Line.WHITE_SPACE_CHARS)) {
+                continue;
             }
             Rectangle r = new Rectangle();
             r.setRect(tc);
             regions.add(r);
         }
-        
+
         for (Line l: lines.subList(1, lines.size())) {
             List<TextChunk> lineTextElements = new ArrayList<TextChunk>();
             for (TextChunk tc: l.getTextElements()) {
-                if (!tc.isSameChar(Line.WHITE_SPACE_CHARS)) { 
+                if (!tc.isSameChar(Line.WHITE_SPACE_CHARS)) {
                     lineTextElements.add(tc);
                 }
             }
-            
+
             for (Rectangle cr: regions) {
 
                 List<TextChunk> overlaps = new ArrayList<TextChunk>();
@@ -135,30 +147,30 @@ public class BasicExtractionAlgorithm implements ExtractionAlgorithm {
                         overlaps.add(te);
                     }
                 }
-                
+
                 for (TextChunk te: overlaps) {
                     cr.merge(te);
                 }
-                
+
                 lineTextElements.removeAll(overlaps);
             }
-            
+
             for (TextChunk te: lineTextElements) {
                 Rectangle r = new Rectangle();
                 r.setRect(te);
                 regions.add(r);
             }
         }
-        
+
         List<java.lang.Float> rv = new ArrayList<java.lang.Float>();
         for (Rectangle r: regions) {
             rv.add((float) r.getRight());
         }
-        
+
         Collections.sort(rv);
-        
+
         return rv;
-        
+
     }
 
 }
