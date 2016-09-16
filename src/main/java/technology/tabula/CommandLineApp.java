@@ -240,6 +240,7 @@ public class CommandLineApp {
       extractor.setGuess(line.hasOption('g'));
       extractor.setMethod(CommandLineApp.whichExtractionMethod(line));
       extractor.setUseLineReturns(line.hasOption('u'));
+      extractor.setUseStraightEdges(line.hasOption("detect-horizontal-alignment"));
 
       if (line.hasOption('c')) {
           extractor.setVerticalRulingPositions(parseFloatList(line.getOptionValue('c')));
@@ -278,6 +279,7 @@ public class CommandLineApp {
         o.addOption("n", "no-spreadsheet", false, "Force PDF not to be extracted using spreadsheet-style extraction (if there are ruling lines separating each cell, as in a PDF of an Excel spreadsheet)");
         o.addOption("i", "silent", false, "Suppress all stderr output.");
         o.addOption("u", "use-line-returns", false, "Use embedded line returns in cells. (Only in spreadsheet mode.)");
+        o.addOption("ha", "detect-horizontal-alignment", false, "Detect horizontal alignment of text to improve column detection.");
         o.addOption("d", "debug", false, "Print detected table areas instead of processing.");
         o.addOption(OptionBuilder.withLongOpt("batch")
             .withDescription("Convert all .pdfs in the provided directory.")
@@ -321,6 +323,7 @@ public class CommandLineApp {
     private static class TableExtractor {
       private boolean guess = false;
       private boolean useLineReturns = false;
+      private boolean useStraightEdges = false;
       private List<Float> verticalRulingPositions = null;
       private ExtractionMethod method = ExtractionMethod.BASIC;
 
@@ -337,6 +340,10 @@ public class CommandLineApp {
 
       public void setUseLineReturns(boolean useLineReturns) {
         this.useLineReturns = useLineReturns;
+      }
+
+      public void setUseStraightEdges(boolean useStraightEdges) {
+        this.useStraightEdges = useStraightEdges;
       }
 
       public void setMethod(ExtractionMethod method) {
@@ -374,6 +381,10 @@ public class CommandLineApp {
               tables.addAll(basicExtractor.extract(guess));
           }
           return tables;
+        }
+
+        if (useStraightEdges) {
+          basicExtractor.setTextColumnHints(StraightEdgeDetector.getBestPageEdges(page));
         }
 
         if (verticalRulingPositions != null) {

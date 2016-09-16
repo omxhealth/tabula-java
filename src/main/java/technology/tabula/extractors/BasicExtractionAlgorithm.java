@@ -16,7 +16,12 @@ import technology.tabula.TextElement;
 
 public class BasicExtractionAlgorithm implements ExtractionAlgorithm {
 
+    // vertical rulings become column edges
     private List<Ruling> verticalRulings = null;
+
+    // column hints are used in merging text. They do not directly determine
+    // column positions
+    private List<Float> columnHintPositions = null;
 
     public BasicExtractionAlgorithm() {
     }
@@ -26,12 +31,12 @@ public class BasicExtractionAlgorithm implements ExtractionAlgorithm {
     }
 
     public List<Table> extract(Page page, List<Float> verticalRulingPositions) {
-        List<Ruling> verticalRulings = new ArrayList<Ruling>(verticalRulingPositions.size());
-        for (Float p: verticalRulingPositions) {
-            verticalRulings.add(new Ruling((float) page.getTop(), (float) p, 0.0f, (float) page.getHeight()));
-        }
-        this.verticalRulings = verticalRulings;
+        this.verticalRulings = Ruling.verticalRulingsAt(verticalRulingPositions, page);
         return this.extract(page);
+    }
+
+    public void setTextColumnHints(List<Float> columnHintPositions) {
+      this.columnHintPositions = columnHintPositions;
     }
 
     @Override
@@ -43,8 +48,7 @@ public class BasicExtractionAlgorithm implements ExtractionAlgorithm {
             return Arrays.asList(new Table[] { Table.EMPTY });
         }
 
-        List<TextChunk> textChunks = this.verticalRulings == null ? TextElement.mergeWords(page.getText()) : TextElement.mergeWords(page.getText(), this.verticalRulings);
-        List<Line> lines = TextChunk.groupByLines(textChunks);
+        List<Line> lines = TextChunk.groupByLines(extractTextChunks(page));
         List<Float> columns = null;
 
         if (this.verticalRulings != null) {
@@ -100,6 +104,16 @@ public class BasicExtractionAlgorithm implements ExtractionAlgorithm {
     @Override
     public String toString() {
         return "basic";
+    }
+
+    private List<TextChunk> extractTextChunks(Page page) {
+      if (verticalRulings != null) {
+        return TextElement.mergeWords(page.getText(), verticalRulings);
+      } else if (columnHintPositions != null) {
+        return TextElement.mergeWords(page.getText(), Ruling.verticalRulingsAt(columnHintPositions, page));
+      } else {
+        return TextElement.mergeWords(page.getText());
+      }
     }
 
 
@@ -161,7 +175,6 @@ public class BasicExtractionAlgorithm implements ExtractionAlgorithm {
         Collections.sort(rv);
 
         return rv;
-
     }
 
 }
