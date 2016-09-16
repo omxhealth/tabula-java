@@ -42,6 +42,7 @@ Tabula helps you extract tables from PDFs
                             page.
  -h,--help                  Print this help text.
  -i,--silent                Suppress all stderr output.
+ -pn,--rm-page-numbers      Attempt to remove page numbers
  -l,--lattice               Force PDF to be extracted using lattice-mode
                             extraction (if there are ruling lines
                             separating each cell, as in a PDF of an Excel
