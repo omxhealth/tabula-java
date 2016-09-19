@@ -55,7 +55,10 @@ public class StraightEdgeDetector {
     }
 
     public static List<Float> getBestPageEdges(Page page, float nudge) {
-      List<TextChunk> chunks = TextElement.mergeWords(page.getText());
+      List<TextElement> pageTextCopy = new ArrayList<TextElement>(page.getText().size());
+      pageTextCopy.addAll(page.getText());
+        // make a copy, since mergeWords actually changes the input list
+      List<TextChunk> chunks = TextElement.mergeWords(pageTextCopy);
       StraightEdgeDetector leftEdges = detectLeftTextEdges(chunks);
       StraightEdgeDetector rightEdges = detectRightTextEdges(chunks);
 
