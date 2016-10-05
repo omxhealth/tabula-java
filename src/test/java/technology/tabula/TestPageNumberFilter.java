@@ -37,15 +37,40 @@ public class TestPageNumberFilter {
 
 	@Test
 	public void testRemoveLastLine() {
-		List<Line> lines = new ArrayList<Line>();
-		lines.add(lineWithText("wow", 0));
-		lines.add(lineWithText("not a page number", 10));
-		Line expectedLastLine = lineWithText("some text", 20);
-		lines.add(expectedLastLine);
-		lines.add(lineWithText("1/2", 30));
+		List<Line> lines = lastLinePageNumber("1/2", 4);
+		Line expectedLastLine = lines.get(2);
 
 		lines = new PageNumberFilter().filterLines(lines);
 		assertEquals(3, lines.size());
 		assertEquals(expectedLastLine, lines.get(2));
+	}
+
+	@Test
+	public void testDifferentPatterns() {
+		String[] numbers = {"1/2", "1", "32", "page 1", "page 1 of 3", "PAGE 1 of 3"};
+		for (String number: numbers) {
+			List<Line> lines = lastLinePageNumber(number, 5);
+			Line expectedLastLine = lines.get(3);
+
+			lines = new PageNumberFilter().filterLines(lines);
+			assertEquals("failed to remove last line: (" + number + ")", 4, lines.size());
+			assertEquals(expectedLastLine, lines.get(3));
+		}
+	}
+
+	private List<Line> lastLinePageNumber(String pageNumber, int count) {
+		List<Line> lines = new ArrayList<Line>();
+
+		for (int i = 0; i < count - 1; i++) {
+			if (i % 3 == 0)
+				lines.add(lineWithText("wow", count * 10 + 10));
+			else if (i % 3 == 1)
+				lines.add(lineWithText("some text", count * 10 + 10));
+			else
+				lines.add(lineWithText("not a page number", count * 10 + 10));
+		}
+		lines.add(lineWithText(pageNumber, count * 10 + 10));
+
+		return lines;
 	}
 }

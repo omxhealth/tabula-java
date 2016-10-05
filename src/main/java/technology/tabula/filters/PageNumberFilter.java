@@ -11,7 +11,8 @@ import technology.tabula.TextChunk;
 
 public class PageNumberFilter implements LineFilter {
     // regex to match lines that look like "   1/2  "
-    private static final Pattern PAGE_NUMBER_PATTERN = Pattern.compile("\\A\\s*\\d+\\s*/\\s*\\d+\\s*\\z");
+    private static final Pattern PAGE_NUMBER_PATTERN = Pattern.compile("(?i)\\A\\s*(page\\s*)?\\d+\\s*(/\\s*\\d+\\s*)?\\z");
+    private static final Pattern PAGE_X_OF_X_PATTERN = Pattern.compile("(?i)\\A\\s*page\\s*\\d+\\s*of\\s*\\d+\\z");
 
 
     public List<Line> filterLines(List<Line> lines) {
@@ -23,7 +24,9 @@ public class PageNumberFilter implements LineFilter {
     }
 
     private static boolean isLineNumber(Line line) {
-      return PAGE_NUMBER_PATTERN.matcher(lineTextContent(line)).matches();
+      String text = lineTextContent(line);
+      return PAGE_NUMBER_PATTERN.matcher(text).matches()
+        || PAGE_X_OF_X_PATTERN.matcher(text).matches();
     }
 
     private static String lineTextContent(Line line) {
